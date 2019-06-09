@@ -56,7 +56,7 @@ void fatal_errno(int line)
    exit(1);
 }
 
-int pivot_root(void)
+int my_pivot_root(void)
 {
 
    int ret;
@@ -71,7 +71,7 @@ int pivot_root(void)
    /* Enter the mount and user namespaces. Note that in some cases (e.g., RHEL
       6.8), this will succeed even though the userns is not created. In that
       case, the following mount(2) will fail with EPERM. */
-   TRY (unshare(CLONE_NEWNS|CLONE_NEWUSER));
+   // TRY (unshare(CLONE_NEWNS|CLONE_NEWUSER));
 
    /* Claim the image for our namespace by recursively bind-mounting it over
       itself. This standard trick avoids conditions 1 and 2. */
@@ -86,6 +86,7 @@ int pivot_root(void)
    /* Claim /tmp for our namespace. You would think that because /tmp contains
       /tmp/newroot and it's a recursive bind mount, we could claim both in the
       same call. But, this causes pivot_root(2) to fail later with EBUSY. */
+
    TRY (mount("/home/lukerobbins2112/Project", "/home/lukerobbins2112/Project", NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
    /* chdir to /tmp. This moves the process' special "." pointer to
@@ -138,8 +139,3 @@ int pivot_root(void)
    return 0;
 }
 
-int main(){
-
-  pivot_root();
-  return 0;
-}

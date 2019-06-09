@@ -10,6 +10,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdlib.h>
+
+#include "pivot_root.h"
+
 #define STACKSIZE (1024 * 1024)
 
 struct params{
@@ -70,6 +73,7 @@ int exec(void * args)
       print_err("msgget");
     }
 
+    my_pivot_root();
 
     // Execute the given command
     // Use print_err to print error if execvp fails
@@ -122,7 +126,6 @@ int main(int argc, char ** argv)
     }
 
     // Namespace flags
-    // ADD more flags
     const int flags =
         SIGCHLD
       | CLONE_NEWNS
