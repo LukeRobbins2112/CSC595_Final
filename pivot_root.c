@@ -96,6 +96,8 @@ int my_pivot_root(void)
 
    TRY (chdir("/home/lukerobbins2112/Project/newroot"));
 
+   ret = hkr_img_extract("rootfs.tar");
+   printf("ret:%d\n",ret);
 
 
    TRY (chdir("/home/lukerobbins2112/Project/"));
@@ -125,9 +127,6 @@ int my_pivot_root(void)
    TRY (chdir("/newroot"));
    TRY (syscall(SYS_pivot_root, "/newroot", "/newroot/oldroot"));
    TRY (chroot("."));
-
-   ret = hkr_img_extract("rootfs.tar");
-   printf("ret:%d\n",ret);
 
    /* Unmount the old filesystem and it's gone for good. */
    TRY (umount2("/oldroot", MNT_DETACH));
