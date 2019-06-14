@@ -11,7 +11,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "pivot_root.h"
+// #include "pivot_root.h"
+int my_pivot_root();
 
 #define STACKSIZE (1024 * 1024)
 
@@ -51,6 +52,8 @@ int exec(void * args)
     // Remount proc
     // Use print_err to print error if mount fails
 
+  my_pivot_root();
+
   int result;
   result = mount("proc", "/proc", "proc", 0, NULL);
   if (result != 0){
@@ -73,8 +76,6 @@ int exec(void * args)
       print_err("msgget");
     }
 
-    my_pivot_root();
-
     // Execute the given command
     // Use print_err to print error if execvp fails
     result = execvp(userParams->cmd, userParams->argv);
@@ -89,41 +90,16 @@ int main(int argc, char ** argv)
 {
     // Provide some feedback about the usage
     if (argc < 2) {
-        fprintf(stderr, "USAGE ./container num_namespaces cmd cpu_pct mem_limit num_levels [...args]\n");
-        return 1;
+      fprintf(stderr, "USAGE ./container cmd\n");
+      return 1;
     }
-
-    int numNamespaces = atoi(argv[1]);
 
     // Initialize params struct
     struct params * userParams = (struct params *)malloc(sizeof(struct params));
-    userParams->cmd = (char *)malloc(strlen(argv[2]) + 1);
-    strcpy(userParams->cmd, argv[2]);
-
-
-
-    userParams->cpu_pct = atoi(argv[3]);
-    userParams->mem_limit = atoi(argv[4]);
-    userParams->num_levels = atoi(argv[5]);
-
-    // Fill in additional args
-    userParams->argc = 0;
-    int numArgs = argc - 6;
-    if (numArgs > 0){
-      userParams->argv = (char **)malloc((sizeof(char *) * numArgs) + 1);
-      userParams->argc = numArgs;
-      userParams->argv[numArgs] = NULL;
-    }
-    else{
-      userParams->argv = (char **)malloc(sizeof(char *) * 2);
-      userParams->argv[0] = "";
-      userParams->argv[1] = NULL;
-    }
-
-    for (int i = 6; i < argc; i++){
-      userParams->argv[i-6] = (char *)malloc(strlen(argv[i]) + 1);
-      strcpy(userParams->argv[i - 6], argv[i]);
-    }
+    size_t len = strlen(argv[1]);
+    userParams->cmd = (char *)malloc(len+1);
+    strcpy(userParams->cmd, argv[1]);
+    userParams->cmd[len] = '\0';
 
     // Namespace flags
     const int flags =
@@ -136,47 +112,10 @@ int main(int argc, char ** argv)
       | CLONE_NEWUSER;
 
     pid_t pid;
-    pid_t * childPIDs = (pid_t *)malloc(sizeof(pid_t) * numNamespaces);
     int status;
 
-    for(int i = 0; i < numNamespaces; i++)
-      {
-		switch(childPIDs[i] = fork())
-          {
-          case -1:
-			{
-              print_err("clone");
-              return -1;
-			}
-          case 0:
-			{
-              printf("%d, child\n", i);
-              pid = clone(exec, stack + STACKSIZE, flags, (void *)userParams);
+    pid = clone(exec, stack + STACKSIZE, flags, (void *)userParams);
+    waitpid(pid, &status, 0);
 
-              while(waitpid(pid, &status, 0) < 0 && errno == EINTR)
-			  {
-                continue;
-              }
-
-              if (WIFEXITED(status))
-			  {
-                return WEXITSTATUS(status);
-              }
-
-              _exit(EXIT_SUCCESS);
-			}
-          default:
-			{
-              printf("%d parent\n", i);
-              if (wait(NULL) == -1){
-                print_err("waiting for pid");
-                return 1;
-              }
-              break;
-			}
-          }
-      }
-
-    // Return the exit code
-    return WEXITSTATUS(status);
+    return 0;
 }

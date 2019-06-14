@@ -96,7 +96,7 @@ int my_pivot_root(void)
 
    TRY (chdir("/home/lukerobbins2112/Project/newroot"));
 
-   ret = hkr_img_extract("rootfs.tar");
+   ret = img_extract("rootfs.tar");
    printf("ret:%d\n",ret);
 
 

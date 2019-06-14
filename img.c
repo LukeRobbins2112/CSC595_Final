@@ -1,15 +1,8 @@
-/* 
- * This file is part of the Hawker container engine developed by
- * the HExSA Lab at Illinois Institute of Technology.
- *
- * Copyright (c) 2018, Kyle C. Hale <khale@cs.iit.edu>
- *
- * All rights reserved.
- *
- * Author: Kyle C. Hale <khale@cs.iit.edu>
+/*
+ * This is a wrapper file for libarhcive.
  *
  * This is free software.  You are permitted to use,
- * redistribute, and modify it as specified in the 
+ * redistribute, and modify it as specified in the
  * file "LICENSE.txt".
  */
 #include <stdlib.h>
@@ -27,16 +20,13 @@
 
 #include "img.h"
 
-#define DEFAULT_BASE ".hawker"
-#define DEFAULT_IMAGES "images"
+// These variables must be initialized if image is in a different directory than this program
+#define DEFAULT_BASE ""
+#define DEFAULT_IMAGES ""
+static char * img_path  = ".";
+static char * base_path = ".";
 
-static char * img_path  = "."; //NULL;
-static char * base_path = "."; //NULL;
-static char * this_img  = NULL;
-
-
-char * 
-hkr_get_base_cfg_path (void)
+char * get_base_cfg_path (void)
 {
     if (base_path) {
         return base_path;
@@ -51,8 +41,7 @@ hkr_get_base_cfg_path (void)
 }
 
 
-char * 
-hkr_get_img_path (void)
+char * get_img_path (void)
 {
     if (img_path) {
         return img_path;
@@ -65,62 +54,6 @@ hkr_get_img_path (void)
 
     return img_path;
 }
-
-/*void
-hkr_clear_img_cache (void)
-{
-    // TODO: make this more portable
-    char sys_cmd[PATH_MAX];
-*/ //   snprintf(sys_cmd, PATH_MAX, "rm -rf %s/*", hkr_get_img_path());
-/*    system(sys_cmd);
-    printf("Image cache cleared\n");
-}*/
-
-
-char * 
-hkr_get_img (char * img)
-{
-    if (this_img) {
-        return this_img;
-    } else  {
-        this_img = calloc(PATH_MAX, 1);
-        snprintf(this_img, PATH_MAX, "%s/%s", hkr_get_img_path(), img);
-    }
-
-    return this_img;
-}
-
-
-void
-hkr_clear_cfg (void)
-{
-    rmdir(hkr_get_base_cfg_path());
-}
-
-
-/*int
-hkr_img_cache_init (void)
-{
-    char * base = hkr_get_base_cfg_path();
-    char * img  = hkr_get_img_path();
-
-    if (access(base, F_OK) != 0) {
-        if (mkdir(base, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0) {
-            fprintf(stderr, "Could not create hawker config dir: %s\n", strerror(errno));
-            return -1;
-        }
-    }
-
-    if (access(img, F_OK) != 0) {
-        if (mkdir(img, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0) {
-            fprintf(stderr, "Could not hawker image dir: %s\n", strerror(errno));
-            return -1;
-        }
-    }
-
-    return 0;
-}*/
-
 
 static int copy_data (struct archive *ar, struct archive *aw)
 {
@@ -150,16 +83,7 @@ static int copy_data (struct archive *ar, struct archive *aw)
 	return 0;
 }
 
-int
-hkr_img_exists (char * img)
-{
-    char path[PATH_MAX];
-    snprintf(path, PATH_MAX, "%s/%s", hkr_get_img_path(), img);
-    return access(path, F_OK) == 0;
-}
-
-int
-hkr_img_extract (char * img)
+int img_extract (char * img)
 {
 	struct archive *a;
 	struct archive *ext;
@@ -168,8 +92,8 @@ hkr_img_extract (char * img)
 	int r;
     char path[PATH_MAX];
 
-    snprintf(path, PATH_MAX, "%s/%s", hkr_get_img_path(), img);
-    printf("img path:%s\n",hkr_get_img_path());
+    snprintf(path, PATH_MAX, "%s/%s", get_img_path(), img);
+    printf("img path:%s\n",get_img_path());
 
 	/* Select which attributes we want to restore. */
 	flags = ARCHIVE_EXTRACT_TIME;
@@ -194,7 +118,7 @@ hkr_img_extract (char * img)
 	for (;;) {
 		r = archive_read_next_header(a, &entry);
 
-		if (r == ARCHIVE_EOF) 
+		if (r == ARCHIVE_EOF)
 			break;
 
         //printf("%s\n", archive_entry_pathname(entry));
@@ -208,7 +132,7 @@ hkr_img_extract (char * img)
         }
 
         char newpath[PATH_MAX];
-        snprintf(newpath, PATH_MAX, "%s/%s", hkr_get_img_path(), archive_entry_pathname(entry));
+        snprintf(newpath, PATH_MAX, "%s/%s", get_img_path(), archive_entry_pathname(entry));
         archive_entry_set_pathname(entry, newpath);
 
 		r = archive_write_header(ext, entry);
@@ -251,10 +175,9 @@ hkr_img_extract (char * img)
 }
 
 
-/* int main */
-/* (int argc, char **argv) */
+/* int main (int argc, char **argv) */
 /* { */
 /*    base_path = argv[1]; */
 /*    img_path = argv[2]; */
-/*    hkr_img_extract("rootfs.tar"); */
+/*    img_extract("rootfs.tar"); */
 /* } */
