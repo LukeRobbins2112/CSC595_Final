@@ -34,6 +34,7 @@ void print_err(char const * const reason)
 {
     fprintf(stderr, "Error %s: %s\n", reason, strerror(errno));
 }
+
 int exec(void * args)
 {
 
@@ -41,18 +42,6 @@ int exec(void * args)
   struct params * userParams = ((struct params *)args);
 
   printf("cmd: %s\n", userParams->cmd);
-  printf("cpu_pct: %d\n", userParams->cpu_pct);
-  printf("mem_limit: %d\n", userParams->mem_limit);
-  printf("num_levels: %d\n", userParams->num_levels);
-
-  for (int i = 0; i < userParams->argc; i++){
-    printf("Arg #%d: %s\n", i, userParams->argv[i]);
-  }
-
-    // Remount proc
-    // Use print_err to print error if mount fails
-
-  my_pivot_root();
 
   int result;
   result = mount("proc", "/proc", "proc", 0, NULL);
@@ -76,6 +65,8 @@ int exec(void * args)
       print_err("msgget");
     }
 
+    my_pivot_root();
+
     // Execute the given command
     // Use print_err to print error if execvp fails
     result = execvp(userParams->cmd, userParams->argv);
@@ -96,10 +87,18 @@ int main(int argc, char ** argv)
 
     // Initialize params struct
     struct params * userParams = (struct params *)malloc(sizeof(struct params));
+
     size_t len = strlen(argv[1]);
     userParams->cmd = (char *)malloc(len+1);
     strcpy(userParams->cmd, argv[1]);
     userParams->cmd[len] = '\0';
+
+    userParams->argv = (char **)malloc(sizeof(char *) * 3);
+    userParams->argv[0] = (char *)malloc(len+1);
+    strcpy(userParams->argv[0], argv[1]);
+    userParams->argv[0][len] = '\0';
+    userParams->argv[1] = "";
+    userParams->argv[2] = NULL;
 
     // Namespace flags
     const int flags =
